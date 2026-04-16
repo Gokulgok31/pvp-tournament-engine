@@ -16,10 +16,10 @@ public class Tournament {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String tournamentName;
+    private String name;
     @Enumerated(EnumType.STRING)
-    private TournamentType tournamentType;
+    private TournamentType type;
     private Integer maxTeams;
     @Enumerated(EnumType.STRING)
-    private TournamentStatus tournamentStatus;
+    private TournamentStatus status;
 }
