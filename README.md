@@ -1,12 +1,6 @@
-A backend system built using Spring Boot to support head-to-head tournament formats like 1v1, 2v2, 5v5 with dynamic bracket generation and automatic progression.
-
-Problem Statement
-
-To extend an existing battle royale tournament system to support head-to-head formats with:
-- Direct opponent matches
-- Win/Loss results
-- Bracket generation
-- Automatic round progression
+A backend system built using Spring Boot to support head-to-head tournament formats like 1v1, 2v2, 5v5, PvP with dynamic bracket generation and next round progression.
+The design introduces a Team abstraction and a Match-based system where each match has two opponents and produces a win/loss outcome.
+A bracket generation service creates matches in rounds and manages progression by advancing winners to subsequent rounds until a final winner is determined.
 
 Features
 
