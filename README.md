@@ -39,8 +39,8 @@ System Flow
 
 API's
 
-POST   /tournaments/{id}/generate-bracket
-POST   /matches/{id}/result
-GET    /matches/{id}/winner
-POST   /tournaments/{id}/next-round (optional manual)
-GET    /tournaments/{id}/winner
+- POST   /tournaments/{id}/generate-bracket
+- POST   /matches/{id}/result
+- GET    /matches/{id}/winner
+- POST   /tournaments/{id}/next-round (optional manual)
+- GET    /tournaments/{id}/winner
