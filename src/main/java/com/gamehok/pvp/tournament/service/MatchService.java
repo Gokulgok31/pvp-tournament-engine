@@ -4,11 +4,15 @@ import com.gamehok.pvp.tournament.entity.Match;
 import com.gamehok.pvp.tournament.entity.Team;
 import com.gamehok.pvp.tournament.entity.Tournament;
 import com.gamehok.pvp.tournament.enums.MatchStatus;
+import com.gamehok.pvp.tournament.exception.MatchNotFoundException;
+import com.gamehok.pvp.tournament.exception.TeamNotFoundException;
+import com.gamehok.pvp.tournament.exception.TournamentNotFoundException;
 import com.gamehok.pvp.tournament.repository.MatchRepository;
 import com.gamehok.pvp.tournament.repository.TeamRepository;
 import com.gamehok.pvp.tournament.repository.TournamentRepository;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -17,19 +21,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-@AllArgsConstructor
-@NoArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 @Service
 public class MatchService {
 
-    private TeamRepository teamRepository;
-    private MatchRepository matchRepository;
-    private TournamentRepository tournamentRepository;
+    private final TeamRepository teamRepository;
+    private final MatchRepository matchRepository;
+    private final TournamentRepository tournamentRepository;
 
     public void generateBracket(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+                .orElseThrow(() -> new TournamentNotFoundException("Tournament not found"));
         List<Team> teams = teamRepository.findByTournamentId(tournamentId);
         log.info("Tournament {} has teams {}", tournament.getId(), teams);
         if(teams.size() < 2) {
@@ -67,7 +70,7 @@ public class MatchService {
     public void generateNextRound(Long tournamentId, int currentRound) {
 
         Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+                .orElseThrow(() -> new TournamentNotFoundException("Tournament not found"));
         List<Match> completedMatches = matchRepository.findByTournamentIdAndRoundNumberAndStatus(
                 tournamentId, currentRound, MatchStatus.COMPLETED
         );
@@ -110,17 +113,46 @@ public class MatchService {
 
     public void submitMatchResult(Long matchId, Long winnerTeamId) {
 
-        Match match = matchRepository.findById(matchId).orElseThrow(() -> new RuntimeException("Match not found"));
+        Match match = matchRepository.findById(matchId).orElseThrow(
+                () -> new MatchNotFoundException("Match not found"));
+        Team teamWinner = teamRepository.findById(winnerTeamId).orElseThrow(
+                () -> new TeamNotFoundException("Team not found"));
 
-        Team teamWinner = teamRepository.findById(winnerTeamId).orElseThrow(() -> new RuntimeException("Team not found"));
-
-        if (!winnerTeamId.equals(match.getTeam1()) && !winnerTeamId.equals(match.getTeam2())) {
+        if (!winnerTeamId.equals(match.getTeam1().getId()) &&
+                (match.getTeam2() == null || !winnerTeamId.equals(match.getTeam2().getId()))) {
             throw new RuntimeException("Winner must be one of the teams in the match");
         }
 
         match.setWinner(teamWinner);
         match.setStatus(MatchStatus.COMPLETED);
-
         matchRepository.save(match);
+        log.info("Match result saved successfully {}", match);
+    }
+
+    public Team getMatchWinner(Long matchId) {
+
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new MatchNotFoundException("Match not found"));
+        if(match.getStatus() != MatchStatus.COMPLETED) {
+            throw new RuntimeException("Match not completed yet");
+        }
+        return match.getWinner();
+    }
+
+    public Team getTournamentWinner(Long tournamentId) {
+
+        Integer maxRound = matchRepository.findMaxRoundNumber(tournamentId);
+        List<Match> finalMatches = matchRepository
+                .findByTournamentIdAndRoundNumber(tournamentId, maxRound);
+        log.info("Final Match List {}", finalMatches);
+        if (finalMatches.size() != 1) {
+            throw new RuntimeException("Tournament not finished yet");
+        }
+        Match finalMatch = finalMatches.get(0);
+        if (finalMatch.getStatus() != MatchStatus.COMPLETED) {
+            throw new RuntimeException("Final match not completed yet");
+        }
+
+        return finalMatch.getWinner();
     }
 }
