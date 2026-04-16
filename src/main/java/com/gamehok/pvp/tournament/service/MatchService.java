@@ -4,6 +4,9 @@ import com.gamehok.pvp.tournament.entity.Match;
 import com.gamehok.pvp.tournament.entity.Team;
 import com.gamehok.pvp.tournament.entity.Tournament;
 import com.gamehok.pvp.tournament.enums.MatchStatus;
+import com.gamehok.pvp.tournament.exception.MatchNotFoundException;
+import com.gamehok.pvp.tournament.exception.TeamNotFoundException;
+import com.gamehok.pvp.tournament.exception.TournamentNotFoundException;
 import com.gamehok.pvp.tournament.repository.MatchRepository;
 import com.gamehok.pvp.tournament.repository.TeamRepository;
 import com.gamehok.pvp.tournament.repository.TournamentRepository;
@@ -29,7 +32,7 @@ public class MatchService {
 
     public void generateBracket(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+                .orElseThrow(() -> new TournamentNotFoundException("Tournament not found"));
         List<Team> teams = teamRepository.findByTournamentId(tournamentId);
         log.info("Tournament {} has teams {}", tournament.getId(), teams);
         if(teams.size() < 2) {
@@ -67,7 +70,7 @@ public class MatchService {
     public void generateNextRound(Long tournamentId, int currentRound) {
 
         Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+                .orElseThrow(() -> new TournamentNotFoundException("Tournament not found"));
         List<Match> completedMatches = matchRepository.findByTournamentIdAndRoundNumberAndStatus(
                 tournamentId, currentRound, MatchStatus.COMPLETED
         );
@@ -111,9 +114,9 @@ public class MatchService {
     public void submitMatchResult(Long matchId, Long winnerTeamId) {
 
         Match match = matchRepository.findById(matchId).orElseThrow(
-                () -> new RuntimeException("Match not found"));
+                () -> new MatchNotFoundException("Match not found"));
         Team teamWinner = teamRepository.findById(winnerTeamId).orElseThrow(
-                () -> new RuntimeException("Team not found"));
+                () -> new TeamNotFoundException("Team not found"));
 
         if (!winnerTeamId.equals(match.getTeam1().getId()) &&
                 (match.getTeam2() == null || !winnerTeamId.equals(match.getTeam2().getId()))) {
@@ -129,7 +132,7 @@ public class MatchService {
     public Team getMatchWinner(Long matchId) {
 
         Match match = matchRepository.findById(matchId)
-                .orElseThrow(() -> new RuntimeException("Match not found"));
+                .orElseThrow(() -> new MatchNotFoundException("Match not found"));
         if(match.getStatus() != MatchStatus.COMPLETED) {
             throw new RuntimeException("Match not completed yet");
         }
